@@ -1,19 +1,8 @@
-buildscript {
-    repositories {
-        gradlePluginPortal()
-    }
-    dependencies {
-        classpath "gradle.plugin.com.zeroc.gradle.ice-builder:slice:1.4.5"
-    }
-}
-
 plugins {
     id "java-library"
     id "maven-publish"
+    id 'com.zeroc.gradle.ice-builder.slice' version '1.5.0-SNAPSHOT'
 }
-
-// We have to use old plugin syntax in order for slice plugin to work
-apply plugin: "com.zeroc.gradle.ice-builder.slice"
 
 group = 'org.openmicroscopy'
 version = '5.5.0-SNAPSHOT'
@@ -31,10 +20,6 @@ dependencies {
     testCompile group: 'jmock', name: 'jmock', version: '1.+'
     testCompile group: 'org.apache.directory.server', name: 'apacheds-all', version: '1.5.7'
     testCompile group: 'log4j', name: 'log4j', version: '1.2.17'
-
-    // https://mvnrepository.com/artifact/org.apache.directory.shared/shared-ldap
-    // testCompile group: 'org.apache.directory.shared', name: 'shared-ldap-constants', version: '1.0.0-M1'
-    // testCompile group: 'org.apache.directory.shared', name: 'shared-ldap', version: '0.9.15'
 
     api 'org.openmicroscopy:omero-renderer:5.5.0-SNAPSHOT'
 
