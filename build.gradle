@@ -1,7 +1,7 @@
 plugins {
     id "java-library"
-    id "org.openmicroscopy.server"
     id "org.openmicroscopy.project" version "5.5.0-SNAPSHOT"
+    id "org.openmicroscopy.gradle.ice-builder.slice" version "1.5.0-SNAPSHOT"
 }
 
 group = "org.openmicroscopy"
@@ -17,6 +17,12 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+ext {
+    //the database type: must match the version set in omero-model
+    databaseType = "psql"
+    generatedDir = "src/${databaseType}"
+}
+
 dependencies {
     testImplementation("junit:junit:4.12")
     testImplementation("org.testng:testng:6.14.2")
@@ -26,14 +32,14 @@ dependencies {
     testImplementation('org.slf4j:slf4j-log4j12:1.5.0')
     configurations.testCompile.exclude(group: 'org.slf4j', module: 'jcl-over-slf4j')
 
-    api('org.openmicroscopy:omero-renderer:5.5.0-SNAPSHOT')
+    api("org.openmicroscopy:omero-renderer:5.5.0-SNAPSHOT")
 
     // Spring framework stuff
     implementation("org.springframework:spring-context-support:4.3.14.RELEASE")
     implementation("org.springframework:spring-jms:4.3.14.RELEASE")
     implementation("org.springframework.security:spring-security-ldap:4.2.4.RELEASE")
 
-    if (org.openmicroscopy.ServerPlugin.databaseType == "psql") {
+    if (databaseType.equals("psql")) {
         // Postgres connect driver for java
         implementation 'org.postgresql:postgresql:42.2.1'
     }
@@ -60,6 +66,8 @@ dependencies {
     implementation("org.subethamail:subethasmtp:3.1.7")
 
     implementation("net.sf.ehcache:ehcache:2.10.4")
+
+    // implementation("com.zeroc:ice:+")
 }
 
 test {
@@ -70,7 +78,25 @@ test {
 }
 
 clean {
-    delete slice.output
+    delete generatedDir
+}
+
+if (slice.iceVersion.contains("3.7")) {
+    dependencies {
+        api "com.zeroc:ice:3.7.2"
+    }
+    sourceSets.main.java {
+        srcDirs "src/main/ice37", "$generatedDir/ice37"
+    }
+    slice.output = file("$generatedDir/ice37")
+} else if (slice.iceVersion.contains("3.6")) {
+    dependencies {
+        api "com.zeroc:ice:3.6.4"
+    }
+    sourceSets.main.java {
+        srcDirs "src/main/ice36", "$generatedDir/ice36"
+    }
+    slice.output = file("$generatedDir/ice36")
 }
 
 jar {
@@ -99,10 +125,10 @@ task zipIcedoc(type: Zip) {
     from compileIcedoc
 }
 
-publishing {
-    publications {
-        serverIcedoc(MavenPublication) {
-            artifact zipIcedoc
-        }
-    }
-}
+//publishing {
+//    publications {
+//        serverIcedoc(MavenPublication) {
+//            artifact zipIcedoc
+//        }
+//    }
+//}
