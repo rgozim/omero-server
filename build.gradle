@@ -23,6 +23,14 @@ ext {
     generatedDir = "src/${databaseType}"
 }
 
+if (slice.iceVersion.contains("3.7")) {
+    slice.output = file("$generatedDir/ice37")
+    sourceSets.main.java.srcDirs("src/main/ice37", slice.output)
+} else if (slice.iceVersion.contains("3.6")) {
+    slice.output = file("$generatedDir/ice36")
+    sourceSets.main.java.srcDirs("src/main/ice36", slice.output)
+}
+
 dependencies {
     testImplementation("junit:junit:4.12")
     testImplementation("org.testng:testng:6.14.2")
@@ -33,6 +41,8 @@ dependencies {
     configurations.testCompile.exclude(group: 'org.slf4j', module: 'jcl-over-slf4j')
 
     api("org.openmicroscopy:omero-renderer:5.5.0-SNAPSHOT")
+
+    implementation("com.zeroc:ice")
 
     // Spring framework stuff
     implementation("org.springframework:spring-context-support:4.3.14.RELEASE")
@@ -66,8 +76,6 @@ dependencies {
     implementation("org.subethamail:subethasmtp:3.1.7")
 
     implementation("net.sf.ehcache:ehcache:2.10.4")
-
-    // implementation("com.zeroc:ice:+")
 }
 
 test {
@@ -81,23 +89,6 @@ clean {
     delete generatedDir
 }
 
-if (slice.iceVersion.contains("3.7")) {
-    dependencies {
-        api "com.zeroc:ice:3.7.2"
-    }
-    sourceSets.main.java {
-        srcDirs "src/main/ice37", "$generatedDir/ice37"
-    }
-    slice.output = file("$generatedDir/ice37")
-} else if (slice.iceVersion.contains("3.6")) {
-    dependencies {
-        api "com.zeroc:ice:3.6.4"
-    }
-    sourceSets.main.java {
-        srcDirs "src/main/ice36", "$generatedDir/ice36"
-    }
-    slice.output = file("$generatedDir/ice36")
-}
 
 jar {
     manifest {
@@ -122,13 +113,14 @@ task compileIcedoc(type: org.openmicroscopy.tasks.IceDocsTask, dependsOn: "compi
 
 task zipIcedoc(type: Zip) {
     archiveClassifier.set("icedoc")
+    destinationDirectory.set(layout.buildDirectory.dir("libs"))
     from compileIcedoc
 }
 
-//publishing {
-//    publications {
-//        serverIcedoc(MavenPublication) {
-//            artifact zipIcedoc
-//        }
-//    }
-//}
+publishing {
+    publications.getByName("omeroServer") { MavenPublication pub ->
+        // Ensure ice docs is the last element in maven-metadata.xml
+        // (located in .m2/org/openmicroscopy/omero-server)
+        pub.artifact zipIcedoc
+    }
+}
